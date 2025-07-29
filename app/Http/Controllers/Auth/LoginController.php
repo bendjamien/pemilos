@@ -29,16 +29,19 @@ class LoginController extends Controller
 
         // 2. Coba untuk melakukan otentikasi
         if (Auth::attempt($credentials)) {
-            $request->session()->regenerate(); // Mencegah session fixation attacks
+            $request->session()->regenerate();
 
-            // 3. Cek role setelah login berhasil
-            if (auth()->user()->role === 'admin') {
-                // Jika admin, arahkan ke dashboard admin
-                return redirect()->intended('/admin/dashboard');
+            // --- PERBAIKAN UTAMA DI SINI ---
+            $user = Auth::user();
+
+            // 3. Cek role dan arahkan secara langsung
+            if ($user->role === 'admin') {
+                // Jika role adalah admin, langsung arahkan ke dashboard admin
+                return redirect()->route('admin.dashboard');
+            } else {
+                // Jika role adalah voter (atau lainnya), arahkan ke halaman pemilihan
+                return redirect()->route('vote.index');
             }
-
-            // Jika bukan admin (misal: voter), arahkan ke dashboard biasa
-            return redirect()->intended('/dashboard');
         }
 
         // 4. Jika otentikasi gagal
