@@ -10,26 +10,47 @@ use Illuminate\Http\Request;
 
 class ResultController extends Controller
 {
+    /**
+     * Method untuk menampilkan halaman hasil (view).
+     */
     public function index()
     {
         // --- Menghitung Hasil OSIS ---
-        // Mengambil semua kandidat OSIS beserta jumlah suaranya menggunakan withCount()
         $osisCandidates = OsisCandidate::withCount('votes')->orderBy('votes_count', 'desc')->get();
-        // Menghitung total suara yang masuk khusus untuk OSIS
         $totalOsisVotes = Vote::where('candidate_type', 'App\Models\OsisCandidate')->count();
 
         // --- Menghitung Hasil MPK ---
-        // Mengambil semua kandidat MPK beserta jumlah suaranya
         $mpkCandidates = MpkCandidate::withCount('votes')->orderBy('votes_count', 'desc')->get();
-        // Menghitung total suara yang masuk khusus untuk MPK
         $totalMpkVotes = Vote::where('candidate_type', 'App\Models\MpkCandidate')->count();
 
         // Mengirim semua data yang dibutuhkan ke view
-        return view('admin.results.index', compact(
+        return view('admin.results.index', compact( // Pastikan nama view Anda benar, misal 'admin.results' atau 'admin.results.index'
             'osisCandidates', 
             'totalOsisVotes',
             'mpkCandidates',
             'totalMpkVotes'
         ));
+    }
+
+    /**
+     * Method BARU untuk menyediakan data JSON untuk real-time update.
+     */
+    public function fetchResults()
+    {
+        // --- Menghitung Hasil OSIS (logika yang sama dengan index) ---
+        $osisCandidates = OsisCandidate::withCount('votes')->orderBy('votes_count', 'desc')->get();
+        $totalOsisVotes = Vote::where('candidate_type', 'App\Models\OsisCandidate')->count();
+
+        // --- Menghitung Hasil MPK (logika yang sama dengan index) ---
+        $mpkCandidates = MpkCandidate::withCount('votes')->orderBy('votes_count', 'desc')->get();
+        $totalMpkVotes = Vote::where('candidate_type', 'App\Models\MpkCandidate')->count();
+
+        // Mengirim data sebagai respons JSON
+        return response()->json([
+            'osisCandidates' => $osisCandidates,
+            'totalOsisVotes' => $totalOsisVotes,
+            'mpkCandidates' => $mpkCandidates,
+            'totalMpkVotes' => $totalMpkVotes,
+        ]);
     }
 }

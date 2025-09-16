@@ -74,7 +74,11 @@ Route::middleware('auth')->group(function () {
         Route::resource('osis-candidates', OsisCandidateController::class);
         Route::resource('mpk-candidates', MpkCandidateController::class);
 
-        // Rute untuk hasil suara
+        // Rute untuk halaman hasil suara
         Route::get('results', [ResultController::class, 'index'])->name('results.index');
+
+        // [INI YANG DITAMBAHKAN] Route API untuk mengambil data hasil suara terbaru
+        Route::get('results/fetch', [ResultController::class, 'fetchResults'])->name('results.fetch');
+        
     });
 });
