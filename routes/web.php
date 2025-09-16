@@ -79,6 +79,8 @@ Route::middleware('auth')->group(function () {
 
         // [INI YANG DITAMBAHKAN] Route API untuk mengambil data hasil suara terbaru
         Route::get('results/fetch', [ResultController::class, 'fetchResults'])->name('results.fetch');
+        // [ROUTE BARU] Rute untuk menampilkan halaman laporan final
+    Route::get('results/report', [ResultController::class, 'generateReport'])->name('results.report');
         
     });
 });
