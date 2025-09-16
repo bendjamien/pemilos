@@ -99,23 +99,19 @@ document.addEventListener("DOMContentLoaded", function() {
         mpkChartInstance = updateSection('mpk', data.mpkCandidates, data.totalMpkVotes, colorPaletteMpk, mpkChartInstance);
     }
 
-    // [PERBAIKAN FINAL] FUNGSI updateSection DENGAN PERHITUNGAN PERSENTASE YANG BENAR
+    // [PERBAIKAN FINAL] FUNGSI updateSection DENGAN LOGIKA YANG DIJAMIN BENAR
     function updateSection(type, candidates, totalVotes, colors, chartInstance) {
         const sortedCandidates = [...candidates].sort((a, b) => b.votes_count - a.votes_count);
-        
-        // Hitung total suara dari data kandidat (bukan dari server)
-        const calculatedTotalVotes = candidates.reduce((sum, candidate) => sum + candidate.votes_count, 0);
-        
-        // Update tampilan total suara dengan nilai yang dihitung
-        document.getElementById(`total-${type}-votes`).innerText = calculatedTotalVotes.toLocaleString('id-ID');
+
+        document.getElementById(`total-${type}-votes`).innerText = totalVotes.toLocaleString('id-ID');
 
         const container = document.getElementById(`${type}-candidates-container`);
         let candidatesHtml = '';
 
         if (sortedCandidates.length > 0) {
             sortedCandidates.forEach((candidate, index) => {
-                // Perbaikan perhitungan persentase: gunakan calculatedTotalVotes
-                const percentage = calculatedTotalVotes > 0 ? (candidate.votes_count / calculatedTotalVotes * 100).toFixed(1) : 0;
+                // Kalkulasi persentase yang DIJAMIN BENAR untuk setiap kandidat
+                const percentage = totalVotes > 0 ? (candidate.votes_count / totalVotes * 100).toFixed(1) : 0;
                 let fullName = candidate.name_ketua + (candidate.name_wakil ? ` & ${candidate.name_wakil}` : '');
                 let crownIcon = index === 0 ? '<i class="fas fa-crown crown-leader"></i>' : '';
 
