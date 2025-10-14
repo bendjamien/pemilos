@@ -31,16 +31,37 @@ class LoginController extends Controller
         if (Auth::attempt($credentials)) {
             $request->session()->regenerate();
 
-            // --- PERBAIKAN UTAMA DI SINI ---
             $user = Auth::user();
 
-            // 3. Cek role dan arahkan secara langsung
-            if ($user->role === 'admin') {
-                // Jika role adalah admin, langsung arahkan ke dashboard admin
-                return redirect()->route('admin.dashboard');
-            } else {
-                // Jika role adalah voter (atau lainnya), arahkan ke halaman pemilihan
-                return redirect()->route('vote.index');
+            // ===================================================================
+            // [PERBAIKAN UTAMA] Logika pengalihan (redirect) berdasarkan role
+            // ===================================================================
+
+            // 3. Cek role dan arahkan secara langsung dengan parameter yang benar
+            switch ($user->role) {
+                case 'admin':
+                    // Jika admin, arahkan ke dashboard admin
+                    return redirect()->route('admin.dashboard');
+
+                case 'voter_osis':
+                    // Jika hanya pemilih OSIS, arahkan langsung ke vote OSIS
+                    return redirect()->route('vote.index', 'osis');
+
+                case 'voter_mpk':
+                    // Jika hanya pemilih MPK, arahkan langsung ke vote MPK
+                    return redirect()->route('vote.index', 'mpk');
+                
+                default:
+                    // Untuk role 'voter' umum atau role lainnya,
+                    // periksa mana yang belum dipilih.
+                    if (!$user->has_voted_osis) {
+                        return redirect()->route('vote.index', 'osis');
+                    }
+                    if (!$user->has_voted_mpk) {
+                        return redirect()->route('vote.index', 'mpk');
+                    }
+                    // Jika sudah semua, arahkan saja ke halaman OSIS (yang akan menampilkan pesan "sudah memilih")
+                    return redirect()->route('vote.index', 'osis');
             }
         }
 

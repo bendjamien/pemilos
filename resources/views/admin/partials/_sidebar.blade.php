@@ -163,12 +163,12 @@
     <div class="sidebar-sticky">
         <a href="{{ route('admin.dashboard') }}" class="sidebar-brand text-decoration-none">
             <i class="bi bi-box-seam"></i>
-            <span>Pemilu OSIS</span>
+            <span>PEMILOS</span>
         </a>
 
         <ul class="nav flex-column sidebar-nav">
             <li class="nav-item">
-                <a class="nav-link {{ request()->is('admin/dashboard') ? 'active' : '' }}" href="{{ route('admin.dashboard') }}">
+                <a class="nav-link {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}" href="{{ route('admin.dashboard') }}">
                     <i class="bi bi-grid-1x2-fill"></i> Dashboard
                 </a>
             </li>
@@ -182,12 +182,12 @@
                     <ul class="nav flex-column">
                         <li class="nav-item">
                             <a class="nav-link {{ request()->is('admin/osis-candidates*') ? 'active' : '' }}" href="{{ route('admin.osis-candidates.index') }}">
-                                <i class="bi bi-person-badge"></i> Kandidat OSIS
+                                Kandidat OSIS
                             </a>
                         </li>
                         <li class="nav-item">
                             <a class="nav-link {{ request()->is('admin/mpk-candidates*') ? 'active' : '' }}" href="{{ route('admin.mpk-candidates.index') }}">
-                                <i class="bi bi-person-badge-fill"></i> Kandidat MPK
+                                Kandidat MPK
                             </a>
                         </li>
                     </ul>
@@ -195,14 +195,37 @@
             </li>
 
             <li class="nav-item">
-                <a class="nav-link {{ request()->is('admin/results*') ? 'active' : '' }}" href="{{ route('admin.results.index') }}">
+                <a class="nav-link {{ request()->is('admin/results*') ? 'active' : '' }}" data-bs-toggle="collapse" href="#hasilSubmenu" role="button" aria-expanded="{{ request()->is('admin/results*') ? 'true' : 'false' }}">
                     <i class="bi bi-pie-chart-fill"></i> Hasil Suara
+                    <i class="bi bi-chevron-down ms-auto"></i>
                 </a>
+                <div class="collapse {{ request()->is('admin/results*') ? 'show' : '' }} submenu" id="hasilSubmenu">
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link {{ request()->routeIs('admin.results.osis') ? 'active' : '' }}" href="{{ route('admin.results.osis') }}">
+                                Hasil OSIS
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {{ request()->routeIs('admin.results.mpk') ? 'active' : '' }}" href="{{ route('admin.results.mpk') }}">
+                                Hasil MPK
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {{ request()->routeIs('admin.results.index') ? 'active' : '' }}" href="{{ route('admin.results.index') }}">
+                                Real Count
+                            </a>
+                        </li>
+                    </ul>
+                </div>
             </li>
         </ul>
 
         <div class="sidebar-footer">
-            <a href="#" class="nav-link text-white">
+            <form id="logout-form-sidebar" action="{{ route('logout') }}" method="POST" style="display: none;">
+                @csrf
+            </form>
+            <a href="#" class="nav-link text-white" onclick="event.preventDefault(); document.getElementById('logout-form-sidebar').submit();">
                 <i class="bi bi-person-circle"></i>
                 <span>{{ Auth::user()->name }}</span>
                 <i class="bi bi-box-arrow-right ms-auto"></i>

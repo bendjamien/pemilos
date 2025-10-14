@@ -4,32 +4,25 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-
-// [PERBAIKAN] Tambahkan baris ini untuk memberitahu controller di mana menemukan Model User
-use App\Models\User; 
-
-// Pastikan model-model ini juga sudah ada dan path-nya benar
+use App\Models\User;
 use App\Models\OsisCandidate;
 use App\Models\MpkCandidate;
 use App\Models\Vote;
-use PDF; // Jika Anda berencana menggunakan fitur PDF
 
 class ResultController extends Controller
 {
     /**
-     * Method untuk menampilkan halaman hasil (view).
+     * Method untuk menampilkan dashboard Real Count gabungan.
      */
     public function index()
     {
-        // --- Menghitung Hasil OSIS ---
+        // Data ini akan di-fetch oleh JavaScript, jadi view-nya hanya kerangka.
+        // Namun, kita bisa kirim data awal untuk render pertama kali jika diperlukan.
         $osisCandidates = OsisCandidate::withCount('votes')->orderBy('votes_count', 'desc')->get();
         $totalOsisVotes = Vote::where('candidate_type', 'App\Models\OsisCandidate')->count();
-
-        // --- Menghitung Hasil MPK ---
         $mpkCandidates = MpkCandidate::withCount('votes')->orderBy('votes_count', 'desc')->get();
         $totalMpkVotes = Vote::where('candidate_type', 'App\Models\MpkCandidate')->count();
 
-        // Mengirim semua data yang dibutuhkan ke view
         return view('admin.results.index', compact(
             'osisCandidates', 
             'totalOsisVotes',
@@ -37,21 +30,41 @@ class ResultController extends Controller
             'totalMpkVotes'
         ));
     }
-
+    
     /**
-     * Method untuk menyediakan data JSON untuk real-time update.
+     * Menampilkan halaman hasil khusus untuk OSIS.
      */
-    public function fetchResults()
+    public function osisResults()
     {
-        // --- Menghitung Hasil OSIS ---
         $osisCandidates = OsisCandidate::withCount('votes')->orderBy('votes_count', 'desc')->get();
         $totalOsisVotes = Vote::where('candidate_type', 'App\Models\OsisCandidate')->count();
+        
+        // Buat view baru 'admin.results.osis' untuk ini
+        return view('admin.results.osis', compact('osisCandidates', 'totalOsisVotes'));
+    }
 
-        // --- Menghitung Hasil MPK ---
+    /**
+     * Menampilkan halaman hasil khusus untuk MPK.
+     */
+    public function mpkResults()
+    {
         $mpkCandidates = MpkCandidate::withCount('votes')->orderBy('votes_count', 'desc')->get();
         $totalMpkVotes = Vote::where('candidate_type', 'App\Models\MpkCandidate')->count();
 
-        // Mengirim data sebagai respons JSON
+        // Buat view baru 'admin.results.mpk' untuk ini
+        return view('admin.results.mpk', compact('mpkCandidates', 'totalMpkVotes'));
+    }
+
+    /**
+     * Menyediakan data JSON untuk real-time update. (Tidak perlu diubah)
+     */
+    public function fetchResults()
+    {
+        $osisCandidates = OsisCandidate::withCount('votes')->orderBy('votes_count', 'desc')->get();
+        $totalOsisVotes = Vote::where('candidate_type', 'App\Models\OsisCandidate')->count();
+        $mpkCandidates = MpkCandidate::withCount('votes')->orderBy('votes_count', 'desc')->get();
+        $totalMpkVotes = Vote::where('candidate_type', 'App\Models\MpkCandidate')->count();
+
         return response()->json([
             'osisCandidates' => $osisCandidates,
             'totalOsisVotes' => $totalOsisVotes,
@@ -61,32 +74,27 @@ class ResultController extends Controller
     }
 
     /**
-     * Method untuk menyiapkan dan menampilkan halaman laporan final.
+     * Membuat laporan final gabungan. (Tidak perlu diubah)
      */
     public function generateReport()
     {
-        // === Data OSIS ===
         $osisCandidates = OsisCandidate::withCount('votes')->orderBy('votes_count', 'desc')->get();
         $totalOsisVotes = $osisCandidates->sum('votes_count');
         $osisWinner = $osisCandidates->first();
-        $osisLoser = $osisCandidates->count() > 1 ? $osisCandidates->last() : null;
-
-        // === Data MPK ===
+        
         $mpkCandidates = MpkCandidate::withCount('votes')->orderBy('votes_count', 'desc')->get();
         $totalMpkVotes = $mpkCandidates->sum('votes_count');
         $mpkWinner = $mpkCandidates->first();
-        $mpkLoser = $mpkCandidates->count() > 1 ? $mpkCandidates->last() : null;
-
-        // === Data Statistik Tambahan (INI BAGIAN YANG MENYEBABKAN ERROR SEBELUMNYA) ===
+        
         $totalVoters = User::where('role', 'voter')->count();
-        $usersVoted = User::where('role', 'voter')->where('has_voted', true)->count();
-        $participationPercentage = $totalVoters > 0 ? ($usersVoted / $totalVoters) * 100 : 0;
+        // Perbarui cara menghitung partisipasi jika diperlukan
+        $usersVotedOsis = User::where('role', 'voter')->where('has_voted_osis', true)->count();
+        $usersVotedMpk = User::where('role', 'voter')->where('has_voted_mpk', true)->count();
 
-        // Kirim semua data ke view laporan
         return view('admin.results.report', compact(
-            'osisCandidates', 'totalOsisVotes', 'osisWinner', 'osisLoser',
-            'mpkCandidates', 'totalMpkVotes', 'mpkWinner', 'mpkLoser',
-            'totalVoters', 'usersVoted', 'participationPercentage'
+            'osisCandidates', 'totalOsisVotes', 'osisWinner',
+            'mpkCandidates', 'totalMpkVotes', 'mpkWinner',
+            'totalVoters', 'usersVotedOsis', 'usersVotedMpk'
         ));
     }
 }

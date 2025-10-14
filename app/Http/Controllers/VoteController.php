@@ -12,59 +12,64 @@ use Illuminate\Support\Facades\DB;
 class VoteController extends Controller
 {
     /**
-     * Menampilkan halaman pemilihan.
+     * Menampilkan halaman pemilihan berdasarkan tipe (osis atau mpk).
      */
-    public function index()
+    public function index($type)
     {
-        // Cek apakah user sudah memilih
-        if (Auth::user()->has_voted) {
-            return view('vote.voted'); // Tampilkan halaman "sudah memilih"
+        if (!in_array($type, ['osis', 'mpk'])) {
+            abort(404);
         }
 
-        $osisCandidates = OsisCandidate::all();
-        $mpkCandidates = MpkCandidate::all();
+        $candidates = ($type === 'osis') 
+            ? OsisCandidate::all() 
+            : MpkCandidate::all();
 
-        return view('vote.index', compact('osisCandidates', 'mpkCandidates'));
+        return view('vote.index', compact('candidates', 'type'));
     }
 
     /**
-     * Menyimpan suara dari pemilih.
+     * Menyimpan suara dan mengarahkan kembali ke halaman yang sama.
      */
-    public function store(Request $request)
+    public function store(Request $request, $type)
     {
-        // Cek lagi untuk mencegah double voting
-        if (Auth::user()->has_voted) {
-            return response()->json(['message' => 'Anda sudah memberikan suara.'], 403);
+        $user = Auth::user();
+        
+        if (!in_array($type, ['osis', 'mpk'])) {
+            return response()->json(['message' => 'Tipe pemilihan tidak valid.'], 400);
         }
 
-        $request->validate([
-            'osis_candidate_id' => 'required|exists:osis_candidates,id',
-            'mpk_candidate_id' => 'required|exists:mpk_candidates,id',
-        ]);
+        // [UBAH UNTUK TESTING] Blok 'if' di bawah ini dinonaktifkan untuk mengizinkan vote berulang.
+        // Hapus komentar '/*' dan '*/' untuk mengaktifkan kembali pembatasan satu suara.
+        /* if (($type === 'osis' && $user->has_voted_osis) || ($type === 'mpk' && $user->has_voted_mpk)) {
+            return response()->json(['message' => 'Anda sudah memberikan suara untuk pemilihan ini.'], 403);
+        }
+        */
+
+        if ($type === 'osis') {
+            $request->validate(['candidate_id' => 'required|exists:osis_candidates,id']);
+            $candidateTypeModel = 'App\Models\OsisCandidate';
+        } else {
+            $request->validate(['candidate_id' => 'required|exists:mpk_candidates,id']);
+            $candidateTypeModel = 'App\Models\MpkCandidate';
+        }
 
         try {
-            DB::transaction(function () use ($request) {
-                // Simpan suara untuk OSIS
-                Vote::create([
-                    'user_id' => Auth::id(),
-                    'candidate_id' => $request->osis_candidate_id,
-                    'candidate_type' => 'App\Models\OsisCandidate',
-                ]);
-
-                // Simpan suara untuk MPK
-                Vote::create([
-                    'user_id' => Auth::id(),
-                    'candidate_id' => $request->mpk_candidate_id,
-                    'candidate_type' => 'App\Models\MpkCandidate',
-                ]);
-
-                // Update status pemilih
-                $user = Auth::user();
-                $user->has_voted = true;
-                // $user->save();
+            DB::transaction(function () use ($request, $user, $type, $candidateTypeModel) {
+                Vote::create([ 'user_id' => $user->id, 'candidate_id' => $request->candidate_id, 'candidate_type' => $candidateTypeModel, ]);
+                
+                // Meskipun bisa vote berulang, status 'has_voted' tetap di-update agar alur redirect berfungsi jika diperlukan.
+                if ($type === 'osis') $user->has_voted_osis = true;
+                else $user->has_voted_mpk = true;
+                $user->save();
             });
 
-            return response()->json(['message' => 'Suara Anda berhasil direkam! Terima kasih.']);
+            // Arahkan kembali ke halaman ini sendiri setelah vote berhasil
+            $next_url = route('vote.index', $type);
+
+            return response()->json([
+                'message' => 'Suara Anda berhasil direkam! Terima kasih.',
+                'next_url' => $next_url
+            ]);
 
         } catch (\Exception $e) {
             return response()->json(['message' => 'Terjadi kesalahan, silakan coba lagi.'], 500);

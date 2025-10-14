@@ -14,24 +14,42 @@ class UserSeeder extends Seeder
      */
     public function run(): void
     {
-        // Membuat pengguna Admin
-        // firstOrCreate akan mencari user dengan email ini, jika tidak ada, baru akan dibuat.
-        // Ini mencegah duplikasi jika seeder dijalankan berkali-kali.
-        User::firstOrCreate(
+        // 1. Pengguna ADMIN
+        User::updateOrCreate(
             ['email' => 'admin@pemilu.com'],
             [
                 'name' => 'Administrator',
-                'password' => Hash::make('Rahas1aosk4**//'), // Password default: "password"
+                'password' => Hash::make('admin123'), // Ganti dengan password yang aman
                 'role' => 'admin',
             ]
         );
 
-        // Membuat pengguna Pemilih (Voter)
-        User::firstOrCreate(
-            ['email' => 'siswa@pemilu.com'],
+        // 2. Pengguna VOTE OSIS SAJA
+        User::updateOrCreate(
+            ['email' => 'voter_osis@pemilu.com'],
             [
-                'name' => 'Siswa Pemilih',
-                'password' => Hash::make('Rahas1ajiva**//'), // Password default: "password"
+                'name' => 'Siswa Pemilih OSIS',
+                'password' => Hash::make('osis123'), // Ganti dengan password yang aman
+                'role' => 'voter_osis',
+            ]
+        );
+        
+        // 3. Pengguna VOTE MPK SAJA
+        User::updateOrCreate(
+            ['email' => 'voter_mpk@pemilu.com'],
+            [
+                'name' => 'Siswa Pemilih MPK',
+                'password' => Hash::make('mpk123'), // Ganti dengan password yang aman
+                'role' => 'voter_mpk',
+            ]
+        );
+
+        // 4. (Opsional) Pengguna VOTE KEDUANYA (jika masih diperlukan)
+        User::updateOrCreate(
+            ['email' => 'voter@pemilu.com'],
+            [
+                'name' => 'Siswa Pemilih Umum',
+                'password' => Hash::make('pemilih123'), // Ganti dengan password yang aman
                 'role' => 'voter',
             ]
         );
