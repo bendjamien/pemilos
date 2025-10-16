@@ -4,6 +4,7 @@
 
 @section('content')
 <style>
+    /* Gaya CSS Anda (tidak ada perubahan) */
     :root { --primary-color: #4e73df; --secondary-color: #224abe; --light-bg: #f8f9fc; --card-shadow: 0 4px 15px rgba(0,0,0,0.07); }
     body { background-color: #f4f7f6; padding-bottom: 120px; font-family: 'Poppins', sans-serif; }
     .main-header { background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%); color: white; padding: 3rem 0; border-radius: 0 0 30px 30px; }
@@ -34,15 +35,13 @@
 
 <form id="logout-form" action="{{ route('logout') }}" method="POST" style="display: none;">@csrf</form>
 
-<div class="container py-4">
-
-    {{-- [UBAH UNTUK TESTING] Kondisi diubah menjadi 'false' agar tampilan "Terima Kasih" tidak pernah muncul --}}
-    @if(false)
+<div class="container py-4" id="page-content-wrapper">
+    {{-- Kondisi diganti untuk testing agar tampilan terima kasih tidak muncul di awal --}}
+    @if(false) 
         <div class="voted-container">
-            {{-- Blok ini tidak akan pernah ditampilkan dalam mode testing --}}
+            {{-- Blok ini tidak akan ditampilkan dalam mode testing --}}
         </div>
     @else
-        {{-- TAMPILAN PEMILIHAN AKAN SELALU MUNCUL --}}
         <form id="vote-form">
             @csrf
             <div class="row">
@@ -81,8 +80,12 @@
                             <p class="fw-bold fs-5" id="selected-name">Belum memilih</p>
                         </div>
                         <hr>
-                        <div class="d-grid">
-                            <button type="button" class="btn btn-outline-danger" onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
+                        {{-- ==== TOMBOL BARU DITAMBAHKAN DI SINI ==== --}}
+                        <div class="d-flex gap-2">
+                            <button type="button" class="btn btn-secondary w-100" id="fullscreen-btn">
+                                <i class="bi bi-fullscreen"></i> Layar Penuh
+                            </button>
+                            <button type="button" class="btn btn-outline-danger w-100" onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
                                 <i class="bi bi-box-arrow-right me-1"></i> Logout
                             </button>
                         </div>
@@ -112,7 +115,35 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const form = document.getElementById('vote-form');
+    
+    // ==== LOGIKA FULLSCREEN BARU ====
+    const fullscreenBtn = document.getElementById('fullscreen-btn');
+    
+    function updateFullscreenButton() {
+        if (document.fullscreenElement) {
+            fullscreenBtn.innerHTML = `<i class="bi bi-fullscreen-exit"></i> Keluar Layar Penuh`;
+        } else {
+            fullscreenBtn.innerHTML = `<i class="bi bi-fullscreen"></i> Layar Penuh`;
+        }
+    }
+
+    if (fullscreenBtn) {
+        fullscreenBtn.addEventListener('click', () => {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(err => {
+                    alert(`Error attempting to enable full-screen mode: ${err.message} (${err.name})`);
+                });
+            } else {
+                document.exitFullscreen();
+            }
+        });
+        document.addEventListener('fullscreenchange', updateFullscreenButton);
+    }
+    // ==== AKHIR LOGIKA FULLSCREEN ====
+
+
     if (form) {
+        // Variabel yang sudah ada
         const cards = document.querySelectorAll('.candidate-card');
         const submitBtn = document.getElementById('submit-vote-btn');
         const candidateInput = document.getElementById('candidate_id');
@@ -158,7 +189,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     loader.classList.add('d-none');
                     thankYou.classList.remove('d-none');
                     setTimeout(() => {
-                        window.location.href = data.next_url; 
+                        // ==== LOGIKA NAVIGASI BARU (TANPA REFRESH) ====
+                        loadNextPage(data.next_url);
                     }, 1500); 
                 }, 1000);
             })
@@ -168,6 +200,31 @@ document.addEventListener('DOMContentLoaded', function() {
                 loaderOverlay.classList.add('d-none');
             });
         });
+
+        // ==== FUNGSI BARU UNTUK MEMUAT HALAMAN SECARA DINAMIS ====
+        function loadNextPage(url) {
+            fetch(url)
+                .then(response => response.text())
+                .then(html => {
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(html, 'text/html');
+                    const newContent = doc.getElementById('page-content-wrapper').innerHTML;
+                    
+                    const targetElement = document.getElementById('page-content-wrapper');
+                    targetElement.innerHTML = newContent;
+                    
+                    // Update URL di browser tanpa reload
+                    history.pushState({}, '', url);
+
+                    // Sembunyikan overlay setelah konten baru dimuat
+                    loaderOverlay.classList.add('d-none');
+                })
+                .catch(err => {
+                    console.error('Failed to load next page:', err);
+                    // Jika gagal, lakukan redirect biasa sebagai fallback
+                    window.location.href = url;
+                });
+        }
     }
 });
 </script>
